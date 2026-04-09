@@ -1,0 +1,220 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{graphicx}
+\graphicspath{{./}}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+
+\geometry{margin=1in}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+
+\vspace{0.5cm}
+
+
+{\Huge \textbf{Data Driven AI for Sustainable \\[0.3cm]Farming}}
+\vspace{1.3cm}
+
+{\large A Major Project Report submitted for the partial fulfillment of the degree of}
+
+\vspace{0.5cm}
+
+{\Large \textbf{Bachelor of Technology}}
+
+\vspace{0.3cm}
+
+{\large in}
+
+\vspace{0.3cm}
+
+{\Large \textbf{Computer Science and Engineering}}
+
+\vspace{1.2cm}
+
+{\large Submitted by}
+
+\vspace{0.4cm}
+
+\begin{center}
+\large
+\begin{tabular}{l r}
+\textbf{KINTADA GOWREESH} & \textbf{S200854} \\
+\textbf{VAMARAVALLI HEMANTH KUMAR} & \textbf{S200397} \\
+\textbf{KOLLI KARISHMA} & \textbf{S200545} \\
+\textbf{GADHAM ANANTHA KUMAR} & \textbf{S200417} \\
+\end{tabular}
+\end{center}
+
+\vspace{1.5cm}
+
+ {\large Under the Guidance of}
+
+\vspace{0.3cm}
+
+{\Large \textbf{Mr. G. Siva Rama Sastry \\
+\vspace{0.1cm}}
+{\large Assistant Professor, \\
+Department of CSE}}
+
+\vspace{1cm}
+
+\includegraphics[width=4.5cm]{logo.jpg}
+
+\vspace{0.5cm}
+
+{\Large \textbf{Rajiv Gandhi University of Knowledge Technologies}}
+
+\vspace{0.3cm}
+
+{\large S.M. Puram, Etcherla Mandal 
+ Srikakulam District, Andhra Pradesh \\
+ \vspace{0.3cm}
+India – 532402}
+
+\vspace{0.5cm}
+
+
+\end{center}
+\end{titlepage}
+
+\vspace{0.5cm}
+
+
+
+\chapter*{\centering CERTIFICATE}
+\begin{center}
+
+\includegraphics[width=0.25\textwidth]{logo.jpg}
+\end{center}
+\vspace{1cm}
+This is to certify that the Major Project entitled \textbf{``Data Driven AI for Sustainable
+Farming''}
+submitted by \textbf{KINTADA GOWREESH  (S200854)}, \textbf{VAMARAVALLI HEMANTH KUMAR (S200397)}, \textbf{KOLLI KARISHMA (S200545)}, and
+\textbf{GADHAM ANANTHA KUMAR (S200417)} in partial fulfillment of the requirements for the award of the
+degree of \textbf{Bachelor of Technology in Computer Science and Engineering}
+to Rajiv Gandhi University of Knowledge Technologies, Srikakulam, is a
+bonafide record of work carried out by them under my supervision and guidance.
+
+\vspace{0.3cm}
+
+This report has not been submitted previously in part or in full to this or any
+other University or Institution for the award of any degree or diploma.
+
+\vspace{3cm}
+
+\begin{center}
+\begin{tabular}{p{5cm} p{5cm} p{5cm}}
+
+\centering 
+Mr. G. Siva Rama Sastry  \\Assistant Professor,\\ Project Supervisor,\\Head of the Department, \\Dept of CSE.
+&
+\centering Mrs. S. Lakshmi Sri  \\Assistant Professor,\\ Project Coordinator.
+
+\end{tabular}
+\end{center}
+
+\chapter*{\centering DECLARATION}
+
+
+We hereby declare that the Major Project entitled \textbf{``Data Driven AI for Sustainable
+Farming''}
+submitted by us to Rajiv Gandhi University of Knowledge Technologies,
+Srikakulam, in partial fulfillment of the requirements for the award of the
+degree of \textbf{Bachelor of Technology in Computer Science and Engineering}
+is a bonafide record of work carried out by us.
+
+\vspace{0.3cm}
+
+We further declare that this project report has not been submitted previously
+in part or in full to this or any other University or Institution for the award
+of any degree or diploma.
+
+\vspace{2cm}
+
+\begin{tabular}{p{8cm} p{6cm}}
+
+Date:2 April, 2026 & \hfill   \\
+Place:RGUKT - Srikakulam & \hfill (K GOWREESH)\\
+& \hfill S200854 \\[0.6cm]
+
+ & \hfill   \\
+ & \hfill (V HEMANTH KUMAR)\\
+ & \hfill S200397 \\[0.6cm]
+
+ & \hfill   \\
+ & \hfill (K KARISHMA)\\
+ & \hfill S200545 \\[0.6cm]
+
+ & \hfill    \\
+  & \hfill (G ANANTHA KUMAR)\\
+ & \hfill S200417 \\
+
+\end{tabular}
+
+
+\chapter*{Acknowledgements}
+
+We would like to express our heartfelt gratitude to our project supervisor 
+\textbf{Mr. G. Siva Rama Sastry} sir for his invaluable guidance, constant encouragement, 
+and continuous support throughout the development of this project. His insightful 
+suggestions, technical expertise, and constructive feedback played a crucial role 
+in shaping the direction and successful completion of this work.
+\\
+\par
+
+We are also sincerely thankful to our institution, \textbf{RGUKT}, for providing 
+the necessary resources, infrastructure, and a conducive learning environment to 
+carry out this project effectively. We extend our appreciation to all faculty 
+members and mentors for their guidance, motivation, and technical support during 
+the course of this work.
+\\
+\par
+
+Furthermore, we would like to acknowledge our friends and peers for their valuable 
+discussions, suggestions, and continuous encouragement, which helped us refine 
+various aspects of the project.
+\\
+\par
+
+Finally, we express our deepest gratitude to our family members for their unwavering 
+support, understanding, and motivation throughout this journey. Their encouragement 
+has been a constant source of strength in successfully completing this project.
+
+\chapter*{\centering ABSTRACT}
+
+
+\vspace{0.3cm}
+\textbf{Qauth: A Quantum Secured Authentication Platform} is a security-focused web application designed to strengthen digital authentication by combining conventional identity verification with quantum-inspired key generation and intelligent login-risk analysis. The motivation for the project arises from the growing limitations of classical authentication systems in the presence of credential theft, brute-force attacks, credential stuffing, bot-driven abuse, and the long-term threat posed by quantum computing to existing cryptographic assumptions. The proposed platform addresses these challenges through a layered architecture that integrates secure user management, quantum-key provisioning, anomaly-aware login monitoring, and administrative threat visibility into a unified authentication framework.
+
+The implemented system consists of a React-based frontend, a Django REST backend, a relational persistence layer, and a specialized security engine for quantum-key handling and login anomaly detection. A custom user model is used to manage authentication state, account locking, privilege separation, and failed-login tracking. On successful registration or authenticated login, the platform provisions a per-user quantum key and stores it in encrypted form using AES-256-GCM. The quantum-key pipeline supports three levels of randomness acquisition: true quantum random data through the ANU Quantum Random Number Generator API, a BB84 quantum key distribution simulation as a secondary mechanism, and a cryptographically secure operating-system fallback when external quantum sources are unavailable. To improve entropy conditioning and consistent key derivation, generated randomness is processed using SHA3-256 before secure storage.
+
+In addition to conventional credential-based authentication, the platform implements a quantum challenge-response login demonstration in which a user retrieves a one-time-reveal quantum key, receives a nonce from the server, computes an HMAC-SHA256 proof on the client side, and submits the proof for verification before JWT tokens are issued. This mechanism illustrates how quantum-derived secret material can be incorporated into a stronger authentication workflow beyond static password verification. The backend further records all successful and failed login attempts in an audit log and assigns each attempt a composite risk score based on multiple behavioural indicators such as brute-force activity, excessive request rate from a single IP, credential stuffing patterns, automation-oriented user agents, locked-account access attempts, and unusual login time windows. These signals are aggregated into risk levels that support monitoring, incident analysis, and future adaptive access-control decisions.
+
+The project demonstrates that a modern authentication platform can be enhanced by combining secure software engineering practices, quantum-inspired entropy generation, cryptographic key protection, and behaviour-aware threat detection. The resulting system not only authenticates users but also creates a richer security context around every authentication event, thereby improving resilience, traceability, and administrative awareness. Qauth provides a practical prototype for exploring the intersection of web security, quantum-safe design thinking, and intelligent authentication workflows, while also establishing a strong foundation for future integration with hardware quantum devices, post-quantum cryptographic algorithms, and production-scale threat intelligence systems.
+\\\\
+\textbf{Keywords:}
+Quantum-secured authentication, BB84 simulation, quantum random number generation, anomaly detection, JWT authentication, AES-256-GCM, HMAC challenge-response, audit logging
+\tableofcontents
+\listoffigures
+\listoftables
+
+\newpage
+
+\input{chapters/introduction}
+\input{chapters/literature_review}
+\input{chapters/proposed_system}
+\input{chapters/methodology}
+\input{chapters/results}
+\input{chapters/conclusion}
+
+\bibliographystyle{IEEEtran}
+\nocite{*}
+\bibliography{references}
+\end{document}

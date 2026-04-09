@@ -1,0 +1,86 @@
+\chapter{Introduction}
+
+\section{Background and Motivation}
+Authentication is the first security boundary in almost every modern software system. Web applications, enterprise dashboards, cloud platforms, banking portals, and citizen-service systems all depend on reliable mechanisms for identifying legitimate users and rejecting unauthorized access. Over the last decade, authentication stacks have evolved from simple username-password models into multi-layered systems involving hashed credentials, session tokens, one-time passwords, device fingerprints, behavioural analytics, and centralized identity services. Despite this evolution, operational attacks such as brute-force login attempts, credential stuffing, replay abuse, and automated bot traffic continue to compromise real systems because many deployments still rely on static secrets or insufficient contextual verification.
+
+At the same time, the long-term security outlook of digital authentication is being influenced by the progress of quantum computing. Classical public-key algorithms widely used for secure communications and identity exchange are believed to be vulnerable to sufficiently powerful quantum adversaries, particularly through algorithms such as Shor's algorithm and Grover's search-based acceleration \cite{shor1994,grover1996}. Even when a current authentication system is not directly broken today, an architectural concern remains: if the design does not anticipate stronger computational adversaries, data intercepted now may become easier to exploit in the future. This motivates the exploration of authentication platforms that incorporate quantum-aware security thinking rather than depending solely on traditional patterns.
+
+Qauth, short for \textbf{Quantum Secured Authentication Platform}, is developed in this context as a practical prototype that combines standard web authentication with quantum-inspired key management and behaviour-aware threat analysis. Instead of treating authentication only as a credential-check operation, Qauth treats it as a layered trust-establishment process. The platform performs password validation, provisions per-user quantum-derived key material, supports a challenge-response login demonstration using HMAC proofs, logs all login activity, and applies anomaly scoring rules to identify suspicious access patterns. The result is a richer security model in which identity verification is supported by cryptographic key handling and contextual risk interpretation.
+
+\section{Problem Statement}
+Traditional authentication systems often suffer from three important limitations. First, passwords alone provide weak assurance because users choose predictable secrets, reuse them across applications, and remain vulnerable to phishing and database leaks. Second, conventional login services often lack contextual analysis of requests, which means suspicious activity is detected only after compromise rather than during authentication. Third, many security architectures are designed for present-day computational assumptions and do not explicitly explore how quantum randomness, quantum key distribution concepts, or quantum-resistant design thinking could improve authentication resilience.
+
+In the context of Qauth, the central problem can be stated as follows:
+
+\begin{quote}
+How can a web-based authentication platform be designed to combine conventional credential verification with quantum-inspired key generation and login anomaly detection in order to provide stronger, more observable, and more adaptive security than a password-only workflow?
+\end{quote}
+
+This problem is not limited to theoretical cryptography. It also involves software engineering concerns such as secure storage of key material, API design, behavioural logging, administrative monitoring, account lock policies, frontend-backend coordination, and practical fallback strategies when external quantum randomness is unavailable.
+
+\section{Need for Quantum-Secured Authentication}
+Quantum-secured authentication is not merely a futuristic concept; it is an architectural response to the fact that security systems must increasingly be designed for durability, observability, and layered defence. Quantum key distribution research, particularly the BB84 protocol introduced by Bennett and Brassard, demonstrated that key establishment can be linked to the physics of measurement rather than only to computational hardness assumptions \cite{bb84}. Although a production-grade quantum network requires specialized hardware, software simulations and hybrid implementations can still be valuable for demonstrating how quantum-derived entropy and quantum-aware authentication workflows can be embedded into application design.
+
+The need for a system such as Qauth emerges from the following practical considerations:
+
+\begin{enumerate}
+    \item Password verification alone does not provide sufficient resistance against automated attack patterns.
+    \item Security administrators require detailed audit trails and risk scoring for every authentication event.
+    \item Strong secret material should be generated with high-entropy sources and protected at rest.
+    \item Authentication flows should support key rotation and one-time exposure policies to reduce repeated disclosure.
+    \item System designers increasingly need to explore quantum-safe or quantum-aware enhancements before they become mandatory in production settings.
+\end{enumerate}
+
+Qauth addresses these concerns by integrating quantum-random key generation, a BB84 simulation fallback, AES-256-GCM encrypted key storage, JWT-based session management, HMAC-based challenge-response verification, and a rule-based anomaly scoring engine in a single platform.
+
+\section{Project Objectives}
+The main objective of Qauth is to design and implement a secure authentication platform that extends traditional login workflows with quantum-inspired security primitives and behavioural threat analysis. This primary objective is divided into the following specific goals:
+
+\begin{enumerate}
+    \item To build a web-based authentication system using a modern frontend and backend architecture.
+    \item To implement a custom user model with account state tracking, failed-login counting, and administrative privilege separation.
+    \item To generate per-user quantum-derived keys using a layered randomness pipeline that prioritizes an external quantum random API and falls back to BB84 simulation and operating-system randomness.
+    \item To encrypt all stored quantum key material using AES-256-GCM and maintain fingerprint metadata for safe identification.
+    \item To support a challenge-response login demonstration in which the client computes an HMAC proof over a server-provided nonce using the user's quantum key.
+    \item To create a login anomaly engine capable of scoring requests based on brute-force patterns, request rate, credential stuffing, suspicious user agents, account lock state, and time anomalies.
+    \item To maintain detailed audit logs and threat alerts for administrative monitoring and incident analysis.
+    \item To provide a technical prototype suitable for academic study, implementation analysis, and future extension toward post-quantum or hardware-assisted security models.
+\end{enumerate}
+
+\section{Scope of the Project}
+The scope of Qauth includes frontend user interaction, backend API services, database persistence, cryptographic key handling, login event monitoring, and administrator-facing analytics. The project specifically covers:
+
+\begin{itemize}
+    \item registration and login workflows,
+    \item JWT token issuance and refresh,
+    \item secure quantum key generation and storage,
+    \item quantum challenge-response verification,
+    \item failed login tracking and account locking,
+    \item anomaly scoring and risk categorization,
+    \item audit logging and alert management,
+    \item an administrative dashboard for observing system activity.
+\end{itemize}
+
+The project does not attempt to deploy real photonic quantum hardware, production-grade distributed key exchange infrastructure, hardware security modules, or certified post-quantum cryptographic signatures. Instead, it focuses on a technically realistic software prototype that demonstrates how quantum-oriented concepts can be integrated into an authentication platform in a way that is analyzable, extensible, and aligned with secure software engineering practice.
+
+\section{Proposed Contribution of Qauth}
+The principal contribution of Qauth lies in the integration of multiple security layers into one coherent authentication platform. Many academic projects study authentication, quantum key generation, or anomaly detection as separate topics. Qauth contributes by combining them within a single application architecture and documenting the interactions among these components. The system therefore contributes in four dimensions.
+
+First, it contributes a \textit{hybrid authentication model} that combines password-based verification with quantum-derived secret material and HMAC-based proof validation. Second, it contributes a \textit{secure key pipeline} in which entropy acquisition, conditioning, storage encryption, fingerprinting, and controlled reveal are handled explicitly. Third, it contributes an \textit{observable security layer} through audit logs, login event records, and threat alerts. Fourth, it contributes a \textit{demonstration platform} for academic discussion of how quantum-aware ideas may be embedded into practical web systems without requiring full quantum hardware deployment.
+
+\section{Applications of Qauth}
+Although Qauth is implemented as a prototype, the design principles are applicable to several real-world domains where authentication events must be treated as high-value security operations. Potential application areas include:
+
+\begin{itemize}
+    \item financial systems requiring strict login monitoring,
+    \item enterprise identity gateways with administrative threat dashboards,
+    \item research platforms exploring quantum-safe design patterns,
+    \item citizen-service applications handling sensitive user data,
+    \item healthcare and education portals where account misuse must be audited,
+    \item secure internal tools where behavioural anomaly detection is beneficial.
+\end{itemize}
+
+In each of these domains, the most significant insight from Qauth is not only the use of quantum-derived randomness, but the architectural principle that authentication should be accompanied by contextual evidence, storage discipline, and post-event visibility.
+
+\section{Organization of the Report}
+This report is organized into six chapters. Chapter 1 introduces the motivation, problem statement, objectives, scope, and contributions of Qauth. Chapter 2 reviews the literature on authentication systems, quantum threats, quantum key distribution, and existing secure authentication approaches. Chapter 3 presents the proposed system, its architecture, modules, user roles, workflows, and threat model. Chapter 4 explains the methodology and implementation details, including technology stack, database schema, API design, quantum key pipeline, anomaly scoring logic, and frontend integration. Chapter 5 discusses testing, results, evaluation, limitations, and observed system behaviour. Chapter 6 concludes the report and outlines future enhancements.

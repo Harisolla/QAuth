@@ -1,0 +1,142 @@
+\chapter{Proposed System}
+
+\section{Introduction}
+This chapter presents the design of Qauth as a layered authentication platform. The proposed system is not intended as a minimal login module; it is designed as an integrated security architecture in which authentication, quantum-derived key handling, login monitoring, and administrator visibility operate together. The design therefore emphasizes four properties: secure identity verification, controlled management of quantum key material, behavioural risk analysis, and auditability.
+
+\section{Overview of Qauth}
+Qauth is implemented as a full-stack web application composed of a React frontend, a Django REST backend, a PostgreSQL database, and a Redis-backed caching layer for transient counters used by the anomaly engine. The frontend provides public landing pages, login interactions, quantum verification feedback, and an administrator dashboard. The backend exposes APIs for registration, login, key management, challenge-response verification, event retrieval, and alert handling. The persistence layer stores users, encrypted key material, audit events, and threat alerts. The security engine is responsible for generating quantum-derived keys and scoring login behaviour.
+
+The system can be understood as a sequence of trust-establishment layers:
+
+\begin{enumerate}
+    \item user identity is initially verified through credentials,
+    \item a quantum-derived secret is associated with the user account,
+    \item the secret is used in a challenge-response demonstration,
+    \item the login attempt is scored for suspicious patterns,
+    \item administrative interfaces expose system activity and threats.
+\end{enumerate}
+
+\section{Design Goals}
+The proposed system is guided by the following design goals:
+
+\begin{enumerate}
+    \item \textbf{Security}: protect credentials, encrypt secret material, and identify suspicious access patterns.
+    \item \textbf{Observability}: record all significant login events and expose them through administrative interfaces.
+    \item \textbf{Layered Authentication}: combine static credential verification with quantum-derived key usage.
+    \item \textbf{Controlled Secret Lifecycle}: support key generation, reveal restriction, fingerprinting, and rotation.
+    \item \textbf{Extensibility}: allow future migration toward real quantum hardware or post-quantum cryptographic modules.
+    \item \textbf{Educational Transparency}: make the internal security logic understandable and documentable.
+\end{enumerate}
+
+\section{System Requirements}
+
+\subsection{Functional Requirements}
+The main functional requirements of Qauth are as follows:
+
+\begin{enumerate}
+    \item The system shall allow a user to register with email, username, and password.
+    \item The system shall create and store a quantum-derived key for the user.
+    \item The system shall authenticate valid users through JWT-based login.
+    \item The system shall support quantum-key reveal under a one-time-per-key policy.
+    \item The system shall provide a challenge nonce for quantum login.
+    \item The system shall verify an HMAC proof generated from the user's quantum key.
+    \item The system shall record successful and failed login events.
+    \item The system shall compute anomaly scores and risk levels for login attempts.
+    \item The system shall expose monitoring endpoints for administrators.
+    \item The system shall allow administrators to review and resolve threat alerts.
+\end{enumerate}
+
+\subsection{Non-Functional Requirements}
+The important non-functional requirements are:
+
+\begin{enumerate}
+    \item \textbf{Confidentiality}: raw quantum keys must not be stored or transmitted in plaintext beyond controlled reveal operations.
+    \item \textbf{Integrity}: authentication proofs and stored key records must be protected against tampering.
+    \item \textbf{Availability}: authentication should continue even when external quantum randomness sources fail, through fallback generation.
+    \item \textbf{Scalability}: stateless JWT sessions and Redis-backed counters support higher request volume than purely session-bound architectures.
+    \item \textbf{Maintainability}: modular separation between authentication, quantum engine, and anomaly logic should simplify future extension.
+    \item \textbf{Usability}: frontend flows should present verification progress clearly to end users and meaningful summaries to administrators.
+\end{enumerate}
+
+\section{High-Level Architecture}
+Figure-like description of the proposed architecture can be expressed textually as follows:
+
+\begin{quote}
+\textbf{Client Layer} $\rightarrow$ \textbf{React Frontend} $\rightarrow$ \textbf{Django REST API Layer} $\rightarrow$ \textbf{Authentication Module / Quantum Key Engine / Anomaly Engine} $\rightarrow$ \textbf{PostgreSQL and Redis}
+\end{quote}
+
+The frontend communicates with the backend over HTTP APIs. The backend enforces authentication, permission checks, request handling, key generation, challenge verification, and monitoring logic. PostgreSQL stores durable entities such as users, key metadata, login events, and alerts. Redis is used by the anomaly engine for short-lived counters and sets that represent behavioural patterns within a sliding time window.
+
+\section{Core Modules of the System}
+
+\subsection{Frontend Web Interface}
+The frontend is implemented in React with routed pages for the home page, login flow, and administrator dashboard. The login page includes a quantum verification overlay that visualizes staged progress during credential validation, key access, nonce generation, proof computation, and session finalization. The dashboard displays login logs, key metadata, BB84 demonstration data, and risk analytics.
+
+\subsection{Authentication Service}
+The authentication service is implemented using Django REST Framework and SimpleJWT. It handles user registration, credential validation, token issuance, refresh logic, account lock checks, and endpoint-level authorization. A custom user model stores security-relevant metadata such as failed login counts and lock status.
+
+\subsection{Quantum Key Engine}
+The quantum key engine generates high-entropy secret material for each user. It attempts to obtain random bytes from the ANU Quantum Random Number Generator API. If the API is unavailable, it falls back to a BB84 simulation and then to the operating system cryptographic pseudo-random generator. The generated bytes are conditioned using SHA3-256 and stored in encrypted form.
+
+\subsection{Login Anomaly Detection Engine}
+The anomaly detection engine evaluates login requests using rule-based scoring. It considers repeated failures, request-rate behaviour, credential stuffing patterns, suspicious user-agent strings, locked accounts, and unusual login times. The engine produces a numeric score and a categorical risk level.
+
+\subsection{Audit Logging and Threat Alert Module}
+Every login attempt, successful or failed, is stored as a \texttt{LoginEvent}. The event contains network and behavioural context such as IP address, user agent, success state, failure reason, anomaly score, and triggered flags. High-risk behaviour can be escalated into \texttt{ThreatAlert} records that an administrator can review and resolve.
+
+\subsection{Administrative Dashboard}
+The administrative dashboard is designed for observability. It polls backend APIs for security metrics, login logs, risk distributions, key information, and demonstration endpoints. This supports real-time inspection of system behaviour and gives the project a monitoring dimension beyond ordinary login interfaces.
+
+\section{User Roles and Access Control}
+Qauth supports two broad user roles:
+
+\begin{enumerate}
+    \item \textbf{Standard user}: can register, authenticate, request quantum key metadata, perform key rotation, reveal a key once for demonstration, and complete quantum challenge-response login.
+    \item \textbf{Administrator}: has all standard abilities and can additionally access statistics, login events, user lists, open alerts, and alert-resolution operations.
+\end{enumerate}
+
+Role separation is implemented through the \texttt{is\_admin} field in the custom user model and helper checks in protected backend views. This keeps privileged monitoring operations inaccessible to ordinary users.
+
+\section{Authentication Workflows}
+
+\subsection{Registration with Initial Quantum Key Provisioning}
+During registration, the user submits email, username, password, and password confirmation. The backend validates password strength and matching confirmation using the registration serializer. A custom user is created, after which the quantum key engine generates and stores an encrypted quantum-derived key. The API returns user metadata and safe key metadata such as fingerprint and generation method.
+
+\subsection{Credential-Based Login with Quantum Key Generation}
+In the credential login flow, the backend validates email and password through the JWT serializer. On success, access and refresh tokens are issued. In the same flow, the system records the login attempt, computes anomaly scoring metadata, and ensures that the user's quantum key is generated or refreshed for the session context. This transforms login from a pure credential check into a session bootstrap event with security enrichment.
+
+\subsection{Quantum Challenge-Response Login}
+The quantum login flow is a second-stage authentication demonstration. The user first obtains the raw key through a one-time reveal endpoint, then requests a nonce from the backend. The frontend computes \texttt{HMAC-SHA256(nonce, quantum\_key)} using the Web Crypto API and sends the resulting proof to the backend. The backend recomputes the proof with the stored key and, if valid, issues JWT tokens. This process illustrates possession of user-specific secret material without resending the raw key.
+
+\subsection{Quantum Key Rotation and One-Time Reveal Flow}
+Qauth restricts key exposure through a one-time reveal model. Once a key is revealed, the corresponding record is marked with a reveal timestamp and cannot be revealed again. To obtain a new reveal, the user must rotate the key. This policy demonstrates controlled secret lifecycle management and limits repeated disclosure of raw key material.
+
+\section{Threat Model and Security Assumptions}
+The system assumes an adversary capable of attempting credential guessing, replaying requests, automating login attempts, and probing public endpoints with malicious user-agent patterns. The adversary is also assumed to exploit credential reuse or stolen passwords. The system addresses these risks through failure tracking, account locking, risk scoring, and audit logging.
+
+At the same time, the project makes realistic prototype assumptions:
+
+\begin{enumerate}
+    \item the frontend runtime is trusted to compute HMAC proofs correctly for the user session,
+    \item the backend environment securely stores the encryption secret used for protecting key material,
+    \item the ANU QRNG service may be temporarily unavailable, requiring safe fallback logic,
+    \item the BB84 implementation is a software simulation for educational and architectural purposes rather than a hardware QKD deployment.
+\end{enumerate}
+
+The threat model therefore balances realistic web security concerns with prototype constraints and makes clear what aspects of the system are demonstrative rather than production-certified.
+
+\section{Advantages of the Proposed System}
+Qauth offers several advantages compared with ordinary password-only authentication modules:
+
+\begin{enumerate}
+    \item it introduces high-entropy per-user secret material beyond the password,
+    \item it secures stored key material using authenticated encryption,
+    \item it supports a proof-based login demonstration using HMAC,
+    \item it captures behavioural context for every login event,
+    \item it provides administrative visibility into threats and anomalies,
+    \item it remains operational through multi-level randomness fallback,
+    \item it is designed in a modular way that supports future quantum-safe enhancements.
+\end{enumerate}
+
+\section{Summary}
+The proposed Qauth system is a layered authentication architecture that combines user identity verification, quantum-derived key management, challenge-response proof validation, anomaly-aware login scoring, and administrator observability. It is designed to be secure, explainable, modular, and academically meaningful. The next chapter explains how this design is implemented in code, database structures, API endpoints, frontend flows, and deployment configuration.

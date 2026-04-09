@@ -1,0 +1,91 @@
+\chapter{Literature Review}
+
+\section{Introduction}
+The objective of this chapter is to place Qauth within the broader academic and technical landscape of authentication, cryptography, and quantum-aware security. The literature relevant to this project spans several domains: conventional authentication systems, cryptographic protection of credentials and sessions, quantum computing threats to existing security assumptions, quantum key distribution research, post-quantum cryptography, and behavioural anomaly detection for login security. Rather than treating these topics independently, the review focuses on how they intersect in the design of an advanced authentication platform.
+
+\section{Evolution of Digital Authentication Systems}
+Early digital authentication systems relied primarily on static passwords stored in plaintext or weakly protected forms. As attacks increased, systems transitioned toward salted password hashing, token-based sessions, and stronger identity management workflows. The introduction of web-scale services led to the widespread use of bearer tokens, federated identity protocols, and adaptive access controls. However, increased complexity did not eliminate the fundamental issue that the login step remains a high-value target for attackers.
+
+Research and industry practice increasingly recommend layered authentication, where identity is established through a combination of factors or contextual evidence rather than only a memorized secret. This direction is visible in zero-trust models, risk-based authentication, and continuous session verification. Qauth follows this broader trend by combining a password factor with quantum-derived key usage and anomaly scoring rather than relying on a single static credential.
+
+\section{Classical Authentication Mechanisms}
+Classical authentication mechanisms typically include passwords, hardware tokens, one-time passwords, smart cards, push confirmations, and biometric checks. Password-based authentication remains the most common because of low deployment cost and user familiarity. However, passwords are vulnerable to guessing, phishing, credential reuse, and database compromise. Multi-factor authentication improves assurance by requiring additional evidence, but implementation quality varies significantly.
+
+Token-based session systems such as JSON Web Tokens (JWT) are commonly used in modern APIs because they enable stateless authentication and scalable authorization \cite{rfc7519}. JWTs are practical in distributed applications, but they do not strengthen the initial login event by themselves. If the login process is weak, token issuance merely transfers trust from a vulnerable entry point into a scalable session layer. Qauth therefore uses JWTs for session management while strengthening the authentication ceremony through per-user quantum key material and challenge-response verification.
+
+\section{Cryptographic Foundations for Secure Authentication}
+Secure authentication depends on several well-established cryptographic primitives. Passwords should be stored using adaptive or computationally expensive hashing algorithms such as bcrypt, PBKDF2, scrypt, or Argon2. Message authentication can be performed using HMAC, which provides integrity and authenticity when two parties share a secret key \cite{rfc2104}. Confidential storage of sensitive values is often implemented using authenticated encryption schemes such as AES-GCM, which provide both confidentiality and integrity in a single primitive \cite{nistgcm}.
+
+Qauth makes use of these principles in multiple places. Passwords are managed by Django's authentication framework, client-server challenge-response uses HMAC-SHA256, and stored quantum keys are protected using AES-256-GCM. The project therefore builds on established cryptographic practice while exploring how quantum-derived entropy can improve the secret material feeding those mechanisms.
+
+\section{Multi-Factor Authentication and Adaptive Authentication}
+Multi-factor authentication (MFA) is widely recognized as more secure than password-only systems because it combines knowledge, possession, or inherence factors. However, MFA does not always defend against phishing-resistant or adversary-in-the-middle attacks unless the factors themselves are strongly bound to the transaction. In parallel, adaptive or risk-based authentication evaluates contextual signals such as location, device history, IP address, time of access, and behaviour before granting access.
+
+Adaptive authentication research is especially relevant to Qauth because it shifts attention from identity alone to behavioural credibility. A login attempt may be cryptographically valid yet operationally suspicious. By incorporating rule-based anomaly scoring, Qauth reflects this line of work and shows how an authentication engine can record and classify requests rather than only accepting or rejecting them silently.
+
+\section{Quantum Computing Threats to Existing Security Models}
+Quantum computing has significant implications for cryptography. Shor demonstrated that integer factorization and discrete logarithm problems can be solved efficiently on a sufficiently powerful quantum computer \cite{shor1994}. Since RSA, Diffie-Hellman, and elliptic-curve cryptography depend on the hardness of such problems, large-scale quantum devices could threaten classical public-key infrastructures. Grover's algorithm, while not fully breaking symmetric primitives, effectively reduces brute-force search complexity, thereby motivating longer symmetric key sizes \cite{grover1996}.
+
+The direct implication for authentication is that long-term system design should not assume today’s public-key mechanisms will remain secure indefinitely. Even where Qauth does not fully implement standardized post-quantum signatures or key exchange, it adopts quantum-aware design reasoning by using high-entropy key material, strong symmetric cryptography, and modular security layers that can later integrate post-quantum components.
+
+\section{Quantum Key Distribution and the BB84 Protocol}
+Quantum key distribution (QKD) is one of the most influential concepts in quantum security. The BB84 protocol, proposed by Bennett and Brassard in 1984, uses incompatible measurement bases to detect eavesdropping during key exchange \cite{bb84}. If an adversary observes quantum states, the disturbance introduced by measurement affects the observed error rate, allowing communicating parties to detect interception under idealized assumptions.
+
+In production settings, practical QKD requires specialized optical hardware and carefully controlled channels. However, BB84 remains academically valuable because it illustrates the core idea that key establishment can be linked to physical law rather than only mathematical intractability. Qauth incorporates a software-based BB84 simulation to demonstrate this concept within an application architecture. The implementation does not claim hardware-level quantum security, but it does provide a meaningful educational and architectural bridge between quantum theory and software authentication workflows.
+
+\section{Post-Quantum and Quantum-Resistant Authentication Approaches}
+Post-quantum cryptography (PQC) focuses on algorithms believed to resist attacks by both classical and quantum computers. Current work by standards organizations such as NIST has accelerated the adoption of quantum-resistant signature and key encapsulation mechanisms. PQC is distinct from QKD: QKD depends on quantum channels, whereas PQC uses classical systems with new mathematical problems.
+
+For authentication platforms, this distinction matters. A system may be quantum-aware without having a full PQC implementation, and it may be post-quantum resistant without using any quantum randomness source. Qauth occupies a hybrid research space: it is not a finalized PQC identity platform, but it does explore quantum-secured design ideas through entropy generation, key lifecycle management, and layered session establishment. This makes it a useful stepping stone toward future post-quantum authentication architectures.
+
+\section{Survey of Existing Secure Authentication Platforms}
+Modern authentication platforms typically provide combinations of password verification, OTP support, session tokens, and identity federation. Enterprise systems often add audit logs, IP monitoring, suspicious-login notifications, and administrative management tools. However, most mainstream platforms do not expose quantum-derived secret provisioning to end users, nor do they combine such provisioning with challenge-response authentication in a transparent academic prototype.
+
+Similarly, security dashboards often show failed login counts or device histories, but relatively few educational systems document the internal logic linking login scoring, threat alert creation, key generation, and per-user secure storage. Qauth therefore differs from common identity products by emphasizing explainability and architectural visibility in addition to authentication.
+
+\section{Comparative Analysis of Existing Approaches}
+Table \ref{tab:literature-comparison} compares broad classes of authentication approaches relevant to this project.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Comparative analysis of authentication approaches}
+\label{tab:literature-comparison}
+\begin{tabular}{|p{3.1cm}|p{2.2cm}|p{2.4cm}|p{2.5cm}|p{3.3cm}|}
+\hline
+\textbf{Approach} & \textbf{Primary Factor} & \textbf{Context Awareness} & \textbf{Quantum Relevance} & \textbf{Major Limitation} \\
+\hline
+Password-only systems & Knowledge factor & Low & None & Weak against guessing, reuse, and phishing \\
+\hline
+Conventional MFA systems & Multiple factors & Medium & None & Can still suffer from phishing or poor implementation \\
+\hline
+Adaptive authentication systems & Password + risk signals & High & Indirect & Often depends on proprietary analytics and not key innovation \\
+\hline
+QKD-based research systems & Shared quantum keying & Medium & Direct & Hardware dependence and deployment complexity \\
+\hline
+Post-quantum authentication research & Quantum-resistant primitives & Medium & Defensive against future quantum threats & Limited adoption in general web prototypes \\
+\hline
+Qauth hybrid model & Password + quantum-derived key + anomaly scoring & High & Direct and conceptual & Prototype scope; not full production QKD or PQC stack \\
+\hline
+\end{tabular}
+\end{table}
+
+The comparison shows that Qauth does not attempt to replace all existing approaches. Instead, it combines practical elements from several of them: web usability from conventional systems, behavioural awareness from adaptive authentication, and quantum-derived security concepts from QKD-oriented research.
+
+\section{Research Gap}
+The literature reveals a clear gap between theoretical quantum security research and practical, application-level authentication prototypes. Many studies on quantum security focus on physical protocols, mathematical security proofs, or future post-quantum standards. In contrast, many software authentication projects remain limited to passwords, OTPs, and generic tokens without exploring quantum-aware key management or richly documented behavioural monitoring.
+
+This gap is especially visible in educational and engineering settings, where there is a need for systems that:
+
+\begin{enumerate}
+    \item demonstrate quantum-security concepts in software form,
+    \item show how high-entropy secret material can be managed in a real application,
+    \item link login events to anomaly scores and alerts,
+    \item provide an administrator with meaningful security observability,
+    \item remain understandable enough to document chapter-by-chapter in an academic technical report.
+\end{enumerate}
+
+Qauth addresses this gap by implementing a full-stack authentication platform whose architecture can be analyzed from both cryptographic and software-engineering perspectives.
+
+\section{Summary}
+The literature establishes that secure authentication requires more than a password check, that quantum computing motivates renewed attention to long-term security design, and that BB84 remains a foundational model for quantum-aware key distribution. Existing approaches either emphasize practical deployment without quantum innovation or quantum theory without full application-level integration. Qauth is positioned at this intersection. It draws from classical authentication practice, modern anomaly-aware security, and quantum key ideas to deliver a platform that is technically grounded, academically relevant, and implementation oriented.

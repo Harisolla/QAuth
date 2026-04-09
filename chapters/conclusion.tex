@@ -1,0 +1,70 @@
+\chapter{Conclusion and Future Work}
+
+\section{Conclusion}
+Qauth was developed to explore whether a modern authentication platform can be strengthened by combining conventional identity verification with quantum-inspired key generation and behaviour-aware security analysis. The implementation demonstrates that such a combination is both technically feasible and architecturally meaningful. Rather than treating authentication as a one-step password check, Qauth models it as a layered process involving credential validation, secure key lifecycle management, challenge-response proof verification, anomaly interpretation, and administrative visibility.
+
+From a software engineering perspective, the project successfully integrates a React frontend, a Django REST backend, PostgreSQL-based persistence, Redis-backed transient counters, AES-GCM encrypted key storage, JWT-based session handling, and rule-driven anomaly detection into a coherent system. From a security perspective, the project shows that high-entropy user-specific secret material can be incorporated into the authentication workflow in a controlled and observable manner. From an academic perspective, the project provides a useful prototype for understanding how quantum-aware design concepts can influence real application architecture even before full-scale quantum infrastructure becomes commonplace.
+
+\section{Summary of Technical Contributions}
+The main technical contributions of Qauth can be summarized as follows:
+
+\begin{enumerate}
+    \item development of a custom authentication platform with a dedicated user model and security state tracking,
+    \item implementation of a quantum-derived key pipeline using ANU QRNG, BB84 simulation, and secure fallback randomness,
+    \item encryption of stored key material using AES-256-GCM and management of reveal and rotation metadata,
+    \item implementation of a client-server HMAC challenge-response flow using Web Crypto and backend proof verification,
+    \item design of a login anomaly engine using rule-based scoring and Redis-backed sliding-window counters,
+    \item creation of audit logging and administrative monitoring endpoints for security observability,
+    \item delivery of a full-stack prototype suitable for technical demonstration, extension, and future research.
+\end{enumerate}
+
+\section{Achievement of Project Objectives}
+The objectives defined at the beginning of the report have largely been achieved. The project successfully implements secure registration, credential login, quantum-key provisioning, challenge-response verification, account locking, behavioural scoring, and administrative monitoring. It also meets the broader objective of producing a technically rich and explainable security system rather than a minimal login page.
+
+However, objective achievement must be interpreted with prototype realism. While the major architectural goals have been met, certain production-level refinements such as extensive automated tests, fully automated alert escalation, and stronger replay-hardening mechanisms remain open for future work. This does not reduce the value of the implementation; rather, it clarifies the stage of maturity of the system.
+
+\section{Practical Significance of Qauth}
+Qauth is significant because it demonstrates how emerging security ideas can be translated into a practical application rather than remaining at the level of theory. The project is particularly valuable in educational, research, and prototype contexts where it is important to show:
+
+\begin{enumerate}
+    \item how quantum-derived randomness can be integrated into application workflows,
+    \item how secret material should be protected throughout its lifecycle,
+    \item how login events can be enriched with behavioural context,
+    \item how security monitoring can be exposed through administrator-friendly interfaces.
+\end{enumerate}
+
+These contributions make the platform useful not only as a software product but also as a teaching and demonstration system for advanced authentication design.
+
+\section{Limitations of the Current Implementation}
+The present version of Qauth has several limitations that should be acknowledged clearly:
+
+\begin{enumerate}
+    \item the BB84 module is a software simulation and not a hardware QKD implementation,
+    \item the quantum challenge mechanism can be strengthened with nonce persistence and replay protection,
+    \item automated unit, integration, and performance test suites are limited,
+    \item the anomaly engine uses explainable heuristics rather than adaptive machine learning,
+    \item threat alert creation can be made more automatic and policy-driven,
+    \item production-hardening concerns such as distributed scaling, secret rotation, and hardened deployment remain to be completed.
+\end{enumerate}
+
+These limitations are consistent with the project's role as a strong prototype and research-oriented demonstration rather than a final enterprise identity platform.
+
+\section{Future Enhancements}
+
+\subsection{Integration with Hardware Quantum Random Number Sources}
+One natural extension is to connect the platform to hardware-based quantum entropy devices or institutionally hosted QRNG services. This would reduce dependence on software simulation and strengthen the authenticity of the quantum-randomness claim.
+
+\subsection{Advanced Post-Quantum Cryptographic Support}
+Future versions of Qauth can incorporate standardized post-quantum key encapsulation and digital signature schemes. This would move the platform from quantum-aware design toward stronger end-to-end resistance against future quantum adversaries.
+
+\subsection{Real-Time Threat Intelligence Integration}
+The anomaly engine can be expanded by integrating IP reputation feeds, device intelligence, geo-velocity analysis, and adaptive risk thresholds. This would allow the system to evolve from a rule-based prototype into a richer real-time threat evaluation framework.
+
+\subsection{Scalable Cloud Deployment}
+The system can be containerized and deployed through cloud-native infrastructure with separate API, database, cache, and worker services. This would support horizontal scaling, centralized logging, and more realistic production simulation.
+
+\subsection{Expanded Analytics and Reporting}
+The administrator dashboard can be extended with longitudinal analytics, user-behaviour baselines, alert trend charts, exportable security reports, and forensics-oriented drill-down interfaces. Such additions would improve the platform's operational value.
+
+\section{Final Remarks}
+Qauth demonstrates that authentication can be made significantly richer when cryptographic discipline, quantum-inspired key generation, behavioural analysis, and visibility are treated as parts of one system. The project does not claim to solve the entire challenge of future-proof authentication, but it establishes a practical and well-structured foundation for that journey. As quantum computing and post-quantum security continue to shape the cybersecurity landscape, systems like Qauth provide a timely model for how application developers can begin designing with that future in mind.

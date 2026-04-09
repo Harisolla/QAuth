@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+      Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: #020617;
+    color: #f1f5f9;
+  }
+
+  ::selection {
+    background: rgba(34, 211, 238, 0.3);
+    color: #f8fafc;
+  }
+}
+
+@layer components {
+  .qa-shell {
+    min-height: 100vh;
+    color: #f1f5f9;
+    background: linear-gradient(to bottom, #020617, #0f172a, #020617);
+  }
+
+  .qa-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(30, 41, 59, 1);
+    background: rgba(15, 23, 42, 0.7);
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(34, 211, 238, 0.08);
+    backdrop-filter: blur(8px);
+  }
+
+  .qa-input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(30, 41, 59, 1);
+    background: #020617;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #ffffff;
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  }
+
+  .qa-input::placeholder {
+    color: rgba(100, 116, 139, 1);
+  }
+
+  .qa-input:focus {
+    border-color: rgba(6, 182, 212, 1);
+    box-shadow: 0 0 0 1px rgba(6, 182, 212, 1);
+  }
+
+  .qa-input:disabled {
+    opacity: 0.5;
+  }
+
+  .qa-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background: rgba(6, 182, 212, 1);
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    color: #020617;
+    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.18);
+    transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+  }
+
+  .qa-primary:hover {
+    background: rgba(34, 211, 238, 1);
+  }
+
+  .qa-primary:disabled {
+    cursor: not-allowed;
+    background: rgba(51, 65, 85, 1);
+    color: rgba(148, 163, 184, 1);
+    box-shadow: none;
+  }
+
+  .qa-link {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: rgba(103, 232, 249, 1);
+    text-decoration: underline;
+    text-decoration-color: rgba(103, 232, 249, 0.4);
+    text-underline-offset: 4px;
+  }
+
+  .qa-link:hover {
+    color: rgba(165, 243, 252, 1);
+  }
+}

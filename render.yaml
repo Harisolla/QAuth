@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: q-auth-platform
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true

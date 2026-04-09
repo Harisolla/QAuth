@@ -1,0 +1,419 @@
+\chapter{Methodology and Implementation}
+
+\section{Introduction}
+This chapter explains how Qauth is implemented in technical terms. The focus is on software architecture, database entities, cryptographic workflow, API design, and execution flow. Because the goal of the report is technical depth rather than superficial description, the chapter maps the document directly to the implemented code structure in the Django backend and React frontend.
+
+\section{Development Methodology}
+The project follows an iterative development methodology. The implementation began with the basic authentication skeleton, including user registration, credential login, and frontend routing. Once core authentication was functional, the quantum key pipeline was added as a service layer responsible for entropy acquisition, key derivation, storage encryption, and retrieval. The anomaly scoring engine was introduced next to make login attempts measurable and classifiable. Administrative endpoints and dashboard views were then added to expose observability. This staged approach reduced coupling and allowed each security layer to be validated independently before integration.
+
+The methodology can be summarized in four implementation phases:
+
+\begin{enumerate}
+    \item base authentication and user lifecycle,
+    \item quantum key generation and secure storage,
+    \item challenge-response and login anomaly analysis,
+    \item monitoring, dashboards, and system evaluation.
+\end{enumerate}
+
+\section{Technology Stack}
+
+\subsection{Frontend Technologies}
+The frontend is built using React and TypeScript. Client-side routing is handled with \texttt{react-router-dom}. The interface includes an animated landing page, a login page with quantum verification overlay, and an administrator dashboard that renders charts and API data views. Browser-native Web Crypto APIs are used for HMAC computation during the quantum login flow.
+
+\subsection{Backend Technologies}
+The backend is implemented in Django with Django REST Framework. JWT token support is provided by \texttt{djangorestframework-simplejwt}. Core authentication logic is exposed through REST endpoints, while view functions and serializers enforce validation, permission checks, and response shaping.
+
+\subsection{Database and Persistence Layer}
+The backend configuration uses PostgreSQL as the default relational database. Durable security records such as users, key metadata, login events, and threat alerts are stored in normalized relational tables. Short-lived counters used for anomaly analysis are stored in Redis through Django's caching framework.
+
+\subsection{Cryptographic and Quantum Libraries}
+The project uses the Python \texttt{cryptography} package for AES-GCM operations and key derivation support. Standard-library modules such as \texttt{hashlib}, \texttt{hmac}, \texttt{secrets}, and \texttt{urllib} are used for hash conditioning, challenge proof verification, randomness fallback, and external QRNG access. On the client side, HMAC computation is performed with the browser's \texttt{crypto.subtle} interface.
+
+\section{Detailed System Architecture}
+
+\subsection{Frontend Routing and Page Flow}
+The React application defines three major routes: the home page (\texttt{/}), the login page (\texttt{/login}), and the administrative dashboard (\texttt{/dashboard}). This routing structure keeps user-facing onboarding, authentication, and administrative analytics separate. The login page implements the client-side stages of quantum verification, while the dashboard acts as both a monitoring interface and an API exploration utility.
+
+\subsection{Backend Service Layer Design}
+The backend uses separate modules for user authentication and security engines. The \texttt{authentication} app contains models, serializers, views, and URL routes for user operations and administrative security endpoints. The \texttt{engines} app contains the quantum key generation pipeline and anomaly scoring engine, as well as demo routes for direct experimentation. This separation improves maintainability by isolating security engines from user-facing request orchestration.
+
+\subsection{Request Processing Pipeline}
+The request pipeline typically follows this sequence:
+
+\begin{enumerate}
+    \item the frontend sends a request to an API endpoint,
+    \item Django REST Framework applies authentication and permission checks,
+    \item serializers validate request data where applicable,
+    \item view functions coordinate model updates and engine execution,
+    \item responses are returned as JSON payloads,
+    \item frontend components update UI state based on the response.
+\end{enumerate}
+
+For login-related requests, the pipeline also includes behavioural scoring and audit event creation. This makes the pipeline security-aware rather than purely transactional.
+
+\section{Database Design}
+
+\subsection{Entity Relationship Overview}
+The database model of Qauth is centered on the custom user account. Each user can own one quantum key record and can produce multiple login events. Each login event can, in turn, be associated with one or more threat alerts. The relational structure is therefore:
+
+\begin{quote}
+\texttt{QAuthUser} $\rightarrow$ \texttt{QuantumKey} (one-to-one) \\
+\texttt{QAuthUser} $\rightarrow$ \texttt{LoginEvent} (one-to-many) \\
+\texttt{LoginEvent} $\rightarrow$ \texttt{ThreatAlert} (one-to-many)
+\end{quote}
+
+\subsection{QAuthUser Table Schema}
+The \texttt{QAuthUser} model extends Django's \texttt{AbstractBaseUser} and \texttt{PermissionsMixin}. It serves as the central identity record for the system.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Schema of \texttt{qauth\_users}}
+\label{tab:qauth-users}
+\begin{tabular}{|p{3.0cm}|p{2.8cm}|p{1.8cm}|p{6.0cm}|}
+\hline
+\textbf{Field} & \textbf{Type} & \textbf{Constraint} & \textbf{Purpose} \\
+\hline
+\texttt{id} & UUID & Primary key & Unique identifier for each user \\
+\hline
+\texttt{email} & EmailField & Unique & Primary login identity \\
+\hline
+\texttt{username} & CharField & Unique & Human-readable user identifier \\
+\hline
+\texttt{is\_active} & Boolean & Default True & Indicates account activity \\
+\hline
+\texttt{is\_staff} & Boolean & Default False & Django administrative flag \\
+\hline
+\texttt{is\_admin} & Boolean & Default False & Qauth administrative access flag \\
+\hline
+\texttt{is\_locked} & Boolean & Default False & Indicates lock due to failed attempts \\
+\hline
+\texttt{failed\_login\_attempts} & PositiveInteger & Default 0 & Counter for brute-force tracking \\
+\hline
+\texttt{last\_failed\_login} & DateTime & Nullable & Timestamp of last failed attempt \\
+\hline
+\texttt{quantum\_key\_id} & CharField & Nullable & Reference identifier for quantum key metadata \\
+\hline
+\texttt{created\_at} & DateTime & Default now & Record creation timestamp \\
+\hline
+\texttt{updated\_at} & DateTime & Auto-updated & Last modification timestamp \\
+\hline
+\end{tabular}
+\end{table}
+
+The model also contains utility methods to increment failed attempts and reset account state. Once the failure count reaches the threshold of five, the account is locked.
+
+\subsection{QuantumKey Table Schema}
+The \texttt{QuantumKey} model stores key metadata and encrypted secret material.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Schema of \texttt{quantum\_keys}}
+\label{tab:quantum-keys}
+\begin{tabular}{|p{3.0cm}|p{2.8cm}|p{1.8cm}|p{6.0cm}|}
+\hline
+\textbf{Field} & \textbf{Type} & \textbf{Constraint} & \textbf{Purpose} \\
+\hline
+\texttt{id} & UUID & Primary key & Unique key record identifier \\
+\hline
+\texttt{user} & OneToOneField & Unique relation & Associates one key with one user \\
+\hline
+\texttt{encrypted\_key} & BinaryField & Required & AES-GCM ciphertext of conditioned key \\
+\hline
+\texttt{key\_fingerprint} & CharField & Required & SHA-256 fingerprint for safe identification \\
+\hline
+\texttt{generation\_method} & CharField & Choice field & Indicates \texttt{qrng\_api}, \texttt{bb84\_sim}, or \texttt{fallback} \\
+\hline
+\texttt{created\_at} & DateTime & Default now & Timestamp of key creation \\
+\hline
+\texttt{rotated\_at} & DateTime & Nullable & Timestamp of latest rotation \\
+\hline
+\texttt{revealed\_at} & DateTime & Nullable & Used to enforce one-time reveal policy \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{LoginEvent Table Schema}
+The \texttt{LoginEvent} model functions as an audit trail and security telemetry record.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Schema of \texttt{login\_events}}
+\label{tab:login-events}
+\begin{tabular}{|p{3.0cm}|p{2.8cm}|p{1.8cm}|p{6.0cm}|}
+\hline
+\textbf{Field} & \textbf{Type} & \textbf{Constraint} & \textbf{Purpose} \\
+\hline
+\texttt{id} & UUID & Primary key & Unique event identifier \\
+\hline
+\texttt{user} & ForeignKey & Nullable & Associated user, if known \\
+\hline
+\texttt{email\_attempted} & EmailField & Required & Email involved in the attempt \\
+\hline
+\texttt{ip\_address} & IP field & Required & Source IP of the request \\
+\hline
+\texttt{user\_agent} & TextField & Optional & Client user-agent string \\
+\hline
+\texttt{success} & Boolean & Required & Whether authentication succeeded \\
+\hline
+\texttt{failure\_reason} & CharField & Optional & Short explanation for failure \\
+\hline
+\texttt{anomaly\_score} & FloatField & Default 0.0 & Composite security score \\
+\hline
+\texttt{risk\_level} & CharField & Choice field & \texttt{low}, \texttt{medium}, \texttt{high}, or \texttt{critical} \\
+\hline
+\texttt{anomaly\_flags} & JSONField & Default list & Triggered anomaly rule labels \\
+\hline
+\texttt{timestamp} & DateTime & Default now & Event occurrence time \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{ThreatAlert Table Schema}
+The \texttt{ThreatAlert} model stores escalated security conditions.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Schema of \texttt{threat\_alerts}}
+\label{tab:threat-alerts}
+\begin{tabular}{|p{3.0cm}|p{2.8cm}|p{1.8cm}|p{6.0cm}|}
+\hline
+\textbf{Field} & \textbf{Type} & \textbf{Constraint} & \textbf{Purpose} \\
+\hline
+\texttt{id} & UUID & Primary key & Unique alert identifier \\
+\hline
+\texttt{login\_event} & ForeignKey & Required & Source event for the alert \\
+\hline
+\texttt{alert\_type} & CharField & Choice field & Nature of the threat \\
+\hline
+\texttt{description} & TextField & Required & Human-readable explanation \\
+\hline
+\texttt{status} & CharField & Default open & Workflow state of the alert \\
+\hline
+\texttt{resolved\_by} & ForeignKey & Nullable & Administrator who resolved it \\
+\hline
+\texttt{created\_at} & DateTime & Default now & Creation timestamp \\
+\hline
+\texttt{resolved\_at} & DateTime & Nullable & Resolution timestamp \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Indexing and Data Integrity Constraints}
+The \texttt{LoginEvent} model defines indexes on \texttt{ip\_address + timestamp}, \texttt{user + timestamp}, and \texttt{risk\_level}. These indexes improve the efficiency of administrative filtering by IP, user, and risk class. Integrity is also enforced through unique constraints on email and username in the user table, and the one-to-one relation between user and key.
+
+\section{Implementation of the Authentication Module}
+
+\subsection{Custom User Manager and User Model Logic}
+The custom user manager provides two main creation methods: \texttt{create\_user} and \texttt{create\_superuser}. The first normalizes email input, hashes the password using Django's built-in secure password handling, and stores the record. The second sets elevated privilege flags. This design ensures that identity records remain compatible with Django authentication while also supporting Qauth-specific fields such as quantum-key linkage and lock state.
+
+The \texttt{increment\_failed\_attempts()} method is security critical. Every failed attempt increments a counter, records the timestamp, and locks the account after five failures. This creates a local account-based defence layer in addition to IP-based anomaly scoring.
+
+\subsection{Registration Serializer and User Creation Flow}
+The registration serializer accepts \texttt{email}, \texttt{username}, \texttt{password}, and \texttt{password2}. The validation logic explicitly compares the two password fields and raises a serializer error if they differ. On successful validation, the serializer delegates user creation to the custom user manager. The registration view then generates an initial quantum key and returns user-safe metadata.
+
+\subsection{JWT Token Issuance and Session Handling}
+JWT issuance is handled through a custom serializer derived from \texttt{TokenObtainPairSerializer}. This approach allows Qauth to preserve the normal access/refresh token workflow while injecting additional behaviour. After successful authentication, the serializer records a login event, calculates risk metadata, and triggers key generation. This is a strong design decision because it keeps session bootstrap and security telemetry synchronized in one place.
+
+\subsection{Failed Login Tracking and Account Locking}
+When authentication fails, the serializer catches the failure path and records the event without blocking the natural error response. If the target email belongs to an existing account, the user model counter is incremented and the anomaly engine is called. The backend therefore captures failure telemetry even when the authentication transaction itself is rejected.
+
+\section{Implementation of the Quantum Key Engine}
+
+\subsection{BB84 Simulation Logic}
+The BB84 simulator models the following steps: Alice generates random bits and random bases, Bob measures them using his own random bases, matching-basis positions are sifted, a subset is sampled to estimate quantum bit error rate (QBER), and the remaining bits are compressed into a privacy-amplified key using SHA3-256. The simulation also tracks whether the estimated QBER crosses an abort threshold associated with eavesdropper suspicion. Although this is a software simulation rather than a physical QKD channel, it accurately captures the educational logic of basis mismatch, measurement uncertainty, and error-rate inspection.
+
+\subsection{ANU QRNG API Integration}
+The preferred randomness source is the ANU Quantum Random Number Generator API. The engine requests unsigned byte values over HTTP and validates that the response contains sufficient data. If the service is available, the returned bytes become the basis for the conditioned key. This layer gives the system an authentic quantum randomness source when network conditions permit.
+
+\subsection{Fallback Randomness Strategy}
+A key architectural strength of Qauth is that it does not depend on a single randomness source. If the external QRNG call fails, the system attempts BB84 simulation. If that also fails, it falls back to \texttt{secrets.token\_bytes()}, which uses the operating system cryptographically secure random generator. This three-level strategy improves availability and ensures the authentication workflow is not blocked by external entropy failures.
+
+\subsection{SHA3-256 Key Conditioning}
+Once raw random bytes are obtained, they are passed through SHA3-256. The purpose of this step is to normalize the output into a fixed-length, well-conditioned hex key. It also creates a deterministic final representation independent of the randomness source. This conditioned output then becomes the logical quantum-derived key used by the rest of the platform.
+
+\subsection{AES-256-GCM Encryption of Stored Keys}
+Raw key material is never stored directly in plaintext. The key manager encrypts the conditioned key using AES-256-GCM before persistence. AES-GCM is an authenticated encryption mode that simultaneously ensures confidentiality and integrity. This choice is appropriate for stored secret material because it reduces the risk that a database compromise would expose directly usable quantum keys.
+
+\subsection{Key Fingerprinting and Metadata Management}
+In addition to the encrypted key, the system stores a fingerprint generated from a SHA-256 digest of the plaintext key. The fingerprint is not sufficient to recover the original key, but it is useful for safe identification in responses, dashboards, and audit contexts. Metadata such as generation method, creation timestamp, rotation timestamp, and reveal timestamp complete the key lifecycle record.
+
+\subsection{Quantum Key Reveal and Rotation Mechanisms}
+The \texttt{quantum-key-reveal} endpoint returns the raw key only if the key has not yet been revealed. After a successful reveal, the backend sets \texttt{revealed\_at}, preventing further disclosure of the same key. The \texttt{rotate-key} endpoint generates a fresh key and updates metadata so the one-time reveal cycle can repeat. This approach demonstrates controlled exposure and forward movement of key state.
+
+\section{Implementation of the Login Anomaly Detection Engine}
+
+\subsection{Rule-Based Risk Scoring Model}
+The anomaly scoring engine computes a composite score from six rule families: brute-force activity, IP request rate, credential stuffing, bot-like user-agent patterns, locked account targeting, and unusual time-of-day access. Each rule contributes a weighted amount to the total score, and the sum is capped at 1.0. The score is then mapped into a categorical level: \texttt{low}, \texttt{medium}, \texttt{high}, or \texttt{critical}.
+
+\subsection{Sliding Window Counters}
+The engine uses Redis-backed cache entries with a 300-second lifetime to maintain counters and sets across short windows. This enables the system to recognize patterns that individual requests cannot reveal, such as repeated attempts from the same IP or many distinct emails targeted by one source. The design is lightweight and suitable for near-real-time risk analysis.
+
+\subsection{Bot Pattern Detection}
+The engine checks the user-agent string against known automation markers such as \texttt{curl}, \texttt{wget}, and \texttt{python-requests}. Empty user-agent strings are also treated as suspicious. This rule is especially useful because many scripted attacks expose recognizable HTTP fingerprints even when credentials themselves appear syntactically valid.
+
+\subsection{Credential Stuffing Detection}
+Credential stuffing is inferred by tracking the number of distinct email identities attempted from the same IP within the time window. This is operationally different from brute-force attacks on a single account. By separating these patterns, Qauth produces more informative flags for administrators.
+
+\subsection{Time-Based Anomaly Detection}
+The time anomaly rule marks logins occurring during an unusual UTC time band between 02:00 and 05:00. Although this is a simplified heuristic, it demonstrates how temporal context can be included in risk evaluation. In future systems, this rule could be personalized per user rather than fixed globally.
+
+\subsection{Composite Risk Score and Risk Level Mapping}
+The final score is translated using thresholds: 0.00--0.25 is low, 0.25--0.55 is medium, 0.55--0.80 is high, and 0.80 or above is critical. This categorical mapping simplifies dashboard representation and administrative action. It also creates a bridge between low-level counters and human-readable threat language.
+
+\section{API Design and Endpoint Specification}
+Qauth exposes its main application logic through REST endpoints under \texttt{/api/auth/} and supporting demo endpoints under \texttt{/api/quantum/}. Table \ref{tab:api-endpoints} summarizes the major routes.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Major API endpoints in Qauth}
+\label{tab:api-endpoints}
+\begin{tabular}{|p{3.7cm}|p{1.2cm}|p{2.3cm}|p{7.0cm}|}
+\hline
+\textbf{Endpoint} & \textbf{Method} & \textbf{Access} & \textbf{Purpose} \\
+\hline
+\texttt{/api/auth/register/} & POST & Public & Create user and provision initial quantum key \\
+\hline
+\texttt{/api/auth/token/} & POST & Public & Validate credentials and issue JWT pair \\
+\hline
+\texttt{/api/auth/token/refresh/} & POST & Public & Refresh JWT access token \\
+\hline
+\texttt{/api/auth/rotate-key/} & POST & Authenticated & Rotate the current user's quantum key \\
+\hline
+\texttt{/api/auth/quantum-key-reveal/} & GET & Authenticated & Reveal raw key once for the current key record \\
+\hline
+\texttt{/api/auth/quantum-challenge/} & POST & Public & Return nonce for challenge-response flow \\
+\hline
+\texttt{/api/auth/quantum-login/} & POST & Public & Validate HMAC proof and issue JWT pair \\
+\hline
+\texttt{/api/auth/key-info/} & GET & Authenticated & Return safe key metadata for current user \\
+\hline
+\texttt{/api/auth/bb84-demo/} & GET & Public & Return BB84 protocol statistics without key exposure \\
+\hline
+\texttt{/api/auth/stats/} & GET & Admin & Return security summary metrics \\
+\hline
+\texttt{/api/auth/events/} & GET & Admin & Return filtered login event list \\
+\hline
+\texttt{/api/auth/alerts/} & GET & Admin & Return open or investigating alerts \\
+\hline
+\texttt{/api/auth/alerts/\{alert\_id\}/resolve/} & PATCH & Admin & Update alert status and resolver metadata \\
+\hline
+\texttt{/api/auth/users/} & GET & Admin & Return user list and security state \\
+\hline
+\texttt{/api/quantum/quantum-key-demo/} & GET & Public & Demo metadata for quantum key generation pipeline \\
+\hline
+\texttt{/api/quantum/anomaly-score-demo/} & GET & Public & Demo scoring result for supplied inputs \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Authentication Endpoints}
+The authentication endpoints cover user registration, credential login, token refresh, and user-specific key metadata operations. Their purpose is to establish authenticated application sessions and manage user security state.
+
+\subsection{Quantum Security Endpoints}
+The quantum security endpoints cover reveal, challenge issuance, challenge-response login, key rotation, and BB84 demonstration. These endpoints are the distinguishing feature of Qauth and express the platform's quantum-aware design.
+
+\subsection{Administrative Monitoring Endpoints}
+Administrative endpoints provide aggregate metrics, filtered event logs, alert lists, alert resolution, and user overviews. They turn the backend into an observable security service rather than a black-box authenticator.
+
+\subsection{Request and Response Payload Structures}
+Selected request structures are summarized below:
+
+\begin{table}[H]
+\centering
+\small
+\caption{Representative request payloads}
+\label{tab:payloads}
+\begin{tabular}{|p{3.6cm}|p{8.8cm}|}
+\hline
+\textbf{Operation} & \textbf{Important fields} \\
+\hline
+Registration & \texttt{email}, \texttt{username}, \texttt{password}, \texttt{password2} \\
+\hline
+Credential login & \texttt{email}, \texttt{password} \\
+\hline
+Quantum challenge request & \texttt{email} \\
+\hline
+Quantum login & \texttt{email}, \texttt{nonce}, \texttt{proof} \\
+\hline
+Resolve alert & \texttt{status} where status is one of resolved, false\_positive, or investigating \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Error Handling Strategy}
+The backend consistently returns JSON errors with HTTP status codes appropriate to missing data, forbidden access, failed proof verification, or unresolved resources. Important examples include 400 for missing fields, 401 for invalid proofs, 403 for unauthorized administrative access or repeated key reveal, and 404 for nonexistent records. This makes the API predictable and easier to integrate into frontend state handling.
+
+\section{Sequence Diagrams}
+For LaTeX portability, the interaction diagrams are described textually.
+
+\subsection{User Registration Sequence}
+\begin{enumerate}
+    \item User submits registration form from frontend.
+    \item Backend serializer validates email, username, password, and password confirmation.
+    \item Custom user manager creates the user record.
+    \item Quantum key engine generates key material and stores encrypted key.
+    \item Backend returns user metadata and key fingerprint metadata.
+\end{enumerate}
+
+\subsection{Credential Login Sequence}
+\begin{enumerate}
+    \item User submits email and password.
+    \item JWT serializer validates credentials.
+    \item Backend computes anomaly score and records login event.
+    \item Quantum key metadata is generated or refreshed.
+    \item Access and refresh tokens are returned.
+\end{enumerate}
+
+\subsection{Quantum Login Sequence}
+\begin{enumerate}
+    \item Authenticated user requests one-time quantum key reveal.
+    \item Backend returns raw key hex and marks key as revealed.
+    \item Frontend requests a nonce using the user's email.
+    \item Backend generates and returns nonce.
+    \item Frontend computes \texttt{HMAC-SHA256(nonce, key)} using Web Crypto.
+    \item Frontend submits email, nonce, and proof.
+    \item Backend recomputes expected HMAC using decrypted stored key.
+    \item If the proof matches, a login event is recorded and JWT tokens are returned.
+\end{enumerate}
+
+\subsection{Threat Alert Generation Sequence}
+\begin{enumerate}
+    \item A login attempt is received.
+    \item Behavioural counters and rule checks are evaluated.
+    \item A composite score and flags are produced.
+    \item The system stores a \texttt{LoginEvent}.
+    \item If future policy thresholds require escalation, a \texttt{ThreatAlert} is created and surfaced to the dashboard.
+\end{enumerate}
+
+\section{Frontend Interface Implementation}
+
+\subsection{Home Page Design}
+The home page serves as both product introduction and conceptual explanation. It visually communicates quantum security concepts through animated particle and grid effects, metric counters, and a staged explanation of the authentication process. This is useful in an academic project because it helps external evaluators understand the layered login design without reading backend code first.
+
+\subsection{Login Page and Verification Overlay}
+The login page implements a staged overlay that displays progress through credential validation, quantum key access, challenge generation, HMAC proof computation, and token finalization. This interface is significant because the authentication flow is more complex than ordinary login. Without staged feedback, users would perceive the process as opaque or delayed.
+
+\subsection{Client-Side HMAC Computation using Web Crypto}
+The frontend converts the revealed hex key into bytes, imports it through \texttt{crypto.subtle.importKey()}, and computes a signature through \texttt{crypto.subtle.sign()} using HMAC-SHA256. This is a secure and standards-aligned way to perform proof generation inside the browser without transmitting raw key material during every request.
+
+\subsection{Administrative Dashboard Flow}
+The administrative dashboard polls the backend at regular intervals, renders risk charts using chart components, summarizes API responses, and allows direct exploration of response structures. It also exposes BB84 demo output and key metadata. From a software engineering perspective, this dashboard demonstrates that security systems benefit from visualization and operational feedback, not just backend protection.
+
+\section{Deployment Considerations}
+
+\subsection{Development Environment Setup}
+The backend requires Python, Django, PostgreSQL connectivity, Redis, and the necessary Python dependencies listed in the project. The frontend requires Node.js, Vite, and the installed React dependency tree. Because the report focuses on architecture rather than deployment scripts, the key observation is that the platform is designed as two cooperating applications with external service dependencies.
+
+\subsection{Configuration Management}
+Configuration is handled through environment variables for secrets and external service locations, including database credentials, Redis URL, and QRNG settings. This is an important practice because secrets and service endpoints should not be tightly hardcoded into source code for production deployment.
+
+\subsection{Security Considerations in Deployment}
+A production deployment would require stronger secret management, HTTPS enforcement, hardened CORS policy, database backup controls, key-encryption secret rotation, and more comprehensive logging. The current implementation already provides a suitable modular base for these enhancements because key handling, authentication logic, and anomaly scoring are separated into identifiable components.
+
+\section{Summary}
+This chapter has explained the implementation of Qauth from the perspectives of architecture, data model, authentication logic, quantum key lifecycle, anomaly scoring, API design, and frontend behaviour. The system combines multiple security layers in a way that is technically traceable from code to architecture. The next chapter evaluates how the platform behaves under testing, security scenarios, and practical usage conditions.

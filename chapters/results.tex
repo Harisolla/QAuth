@@ -1,0 +1,219 @@
+\chapter{Results, Testing and Discussion}
+
+\section{Introduction}
+This chapter evaluates the behaviour of Qauth from functional, security, and architectural perspectives. Because the project is implemented as an end-to-end prototype rather than only a conceptual design, evaluation must consider both successful execution paths and current limitations. The discussion below therefore combines feature validation, expected behaviour under attack-oriented scenarios, interface observations, and critical reflection on the present implementation.
+
+\section{Testing Strategy}
+The testing strategy for Qauth is divided into four layers:
+
+\begin{enumerate}
+    \item \textbf{component validation}, where the logic of the user model, key pipeline, and anomaly engine is inspected and exercised,
+    \item \textbf{API flow testing}, where registration, login, key reveal, challenge, and admin endpoints are invoked as integrated workflows,
+    \item \textbf{security scenario testing}, where repeated failures, suspicious user agents, and abnormal patterns are analyzed,
+    \item \textbf{interface validation}, where frontend states and dashboard outputs are checked against backend responses.
+\end{enumerate}
+
+The current repository contains only a placeholder automated test file in \texttt{backend/authentication/tests.py}. Therefore, most of the evaluation of this version of the project is based on implementation analysis and functional behaviour of the integrated system rather than a comprehensive automated test suite. This is an important limitation and is discussed later in the chapter.
+
+\section{Unit Testing of Core Modules}
+
+\subsection{User Model and Account Locking Tests}
+The custom user model contains deterministic methods for handling failed login counts and account locking. The expected behaviour is:
+
+\begin{enumerate}
+    \item a failed login increments \texttt{failed\_login\_attempts},
+    \item \texttt{last\_failed\_login} is updated with the latest timestamp,
+    \item once the threshold of five failures is reached, \texttt{is\_locked} becomes true,
+    \item a successful reset clears the count and unlocks the account.
+\end{enumerate}
+
+This model-level logic is simple and strong because it places lock-state transitions close to the data model itself rather than scattering them across multiple views.
+
+\subsection{Quantum Key Generation Tests}
+The quantum key pipeline supports three branches of operation:
+
+\begin{enumerate}
+    \item ANU QRNG API success,
+    \item BB84 simulation fallback,
+    \item operating-system randomness fallback.
+\end{enumerate}
+
+From an implementation perspective, the pipeline can be validated by observing that it always returns a fixed-length conditioned key, a generation method label, and metadata about the selected source. The design ensures that quantum-key generation remains available even when external services are unreachable. This fallback tolerance is one of the strongest implementation results of the project.
+
+\subsection{Anomaly Scoring Engine Tests}
+The anomaly scoring engine can be validated by injecting repeated requests with the same IP, changing the number of attempted emails, or using suspicious user-agent strings. The expected output is a composite score and a list of triggered flags. Because the scoring logic is rule-based rather than model-driven, it is highly explainable: each elevated risk score can be traced to specific rule activations such as \texttt{brute\_force}, \texttt{cred\_stuffing}, or \texttt{bot\_ua}.
+
+\section{Integration Testing}
+
+\subsection{Registration Flow Validation}
+The registration workflow is validated by creating a new user through the public API and observing three expected outcomes:
+
+\begin{enumerate}
+    \item a new user record is created successfully,
+    \item a quantum key is generated and stored for that user,
+    \item the response returns safe metadata including key fingerprint and generation method.
+\end{enumerate}
+
+This confirms that Qauth does not treat key provisioning as an optional afterthought; it is integrated directly into account onboarding.
+
+\subsection{Credential Login Flow Validation}
+The credential login flow validates that a correct email-password pair results in:
+
+\begin{enumerate}
+    \item issuance of access and refresh tokens,
+    \item anomaly scoring for the login event,
+    \item insertion of a \texttt{LoginEvent} record,
+    \item availability of quantum key metadata.
+\end{enumerate}
+
+An incorrect credential pair should not produce tokens, but it should still update failure telemetry and audit data. This dual-path behaviour is valuable because many systems neglect to log enough information about rejected attempts.
+
+\subsection{Quantum Challenge-Response Flow Validation}
+The quantum flow can be validated through the following sequence:
+
+\begin{enumerate}
+    \item login and retrieve the one-time reveal key,
+    \item request a nonce,
+    \item compute client-side HMAC over the nonce using the key,
+    \item submit the proof to the quantum login endpoint,
+    \item receive JWT tokens only when the proof matches.
+\end{enumerate}
+
+This flow demonstrates that Qauth successfully adds a possession-style secret factor beyond the password. It also shows that the frontend and backend are cryptographically coordinated through a common HMAC computation.
+
+\subsection{Key Rotation and Reveal Flow Validation}
+The reveal policy is validated by checking that:
+
+\begin{enumerate}
+    \item the first reveal succeeds,
+    \item a second reveal on the same key returns a forbidden response,
+    \item a key rotation generates a fresh key record or refreshed metadata,
+    \item the new key can again be revealed once.
+\end{enumerate}
+
+This is one of the clearest examples of lifecycle discipline in the project, because the secret is not treated as permanently viewable state.
+
+\section{API Testing}
+
+\subsection{Endpoint Coverage Table}
+Table \ref{tab:endpoint-coverage} summarizes the implemented endpoint classes and their primary validation outcomes.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Endpoint coverage summary}
+\label{tab:endpoint-coverage}
+\begin{tabular}{|p{4.0cm}|p{3.2cm}|p{5.8cm}|}
+\hline
+\textbf{Endpoint group} & \textbf{Expected status} & \textbf{Validation focus} \\
+\hline
+Registration & 201 Created & User creation and initial key provisioning \\
+\hline
+Credential login & 200 / 401 & JWT issuance or failure telemetry \\
+\hline
+Token refresh & 200 & Session continuity \\
+\hline
+Key metadata and rotation & 200 & Key lifecycle and metadata integrity \\
+\hline
+Quantum reveal and login & 200 / 403 / 401 & One-time reveal and HMAC proof verification \\
+\hline
+BB84 and engine demos & 200 & Safe demonstration metadata output \\
+\hline
+Admin analytics endpoints & 200 / 403 & Role-protected observability functions \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Success and Failure Response Analysis}
+The API design produces useful distinction between error classes. Missing fields return 400-level validation responses, unauthorized actions return 401 or 403 depending on the context, and resource lookup failures return 404. This clean separation improves frontend handling and makes the system easier to debug. From a report perspective, this is evidence that the project was designed with API discipline rather than ad hoc responses.
+
+\section{Database Validation}
+
+\subsection{Schema Verification}
+The database design is internally coherent. The custom user is the parent record for user identity, the quantum key model enforces a one-to-one relation, login events provide an auditable one-to-many activity stream, and threat alerts extend those events into administrator-facing security objects. This relational arrangement aligns well with the project's objectives and avoids redundant duplication of security data.
+
+\subsection{Audit Log Persistence}
+One of the most meaningful results of the implementation is that both success and failure states are represented in persistent login event records. Each record stores not only status but contextual metadata such as IP address, user agent, anomaly score, and flags. This makes the database more than a user store; it becomes a security evidence store.
+
+\subsection{Threat Alert Record Validation}
+The schema and administrative endpoints for threat alerts are present and structurally sound. However, the current implementation appears to be stronger on alert storage and resolution workflow than on automatic alert creation. This means the project successfully defines the threat-alert data model and administrative interface, but the end-to-end alert escalation policy can be expanded further for a fully automated monitoring pipeline.
+
+\section{Security Testing}
+
+\subsection{Brute Force Attack Simulation}
+Repeated failed attempts against the same email and IP increase the brute-force counter and eventually lock the account. In parallel, the anomaly engine increases the risk contribution associated with the repeated failure pattern. This layered response is valuable because one defence acts at the user-record level while another acts at the behavioural scoring level.
+
+\subsection{Credential Stuffing Simulation}
+When many distinct email identities are attempted from the same IP within the monitoring window, the engine increases the credential-stuffing score. This is a stronger design than only checking repeated attempts on one account because modern automated attacks often target many accounts sequentially from the same source.
+
+\subsection{Bot User-Agent Detection Test}
+Requests containing markers such as \texttt{curl} or \texttt{python-requests}, or missing user-agent strings entirely, are marked suspicious by the anomaly engine. This test demonstrates that Qauth evaluates not just credentials but also the technical profile of the requesting client.
+
+\subsection{Locked Account Handling Test}
+Once an account enters the locked state, subsequent login attempts are associated with stronger risk semantics. This improves consistency between account state and behavioural analysis. It also ensures that the user model and anomaly engine do not operate independently in contradictory ways.
+
+\subsection{Unusual Time Login Detection Test}
+The implementation flags logins occurring within a predefined unusual UTC time window. This is a simple but useful example of contextual detection. Although not personalized, it demonstrates how temporal rules can contribute to a composite risk score with minimal computational cost.
+
+\section{Performance Evaluation}
+
+\subsection{Authentication Response Time}
+No formal benchmark harness is included in the current repository, so precise performance metrics are not reported. However, the system architecture suggests that ordinary credential login should remain lightweight because JWT issuance and serializer validation are standard web operations. The principal additional cost occurs in quantum key generation and anomaly scoring.
+
+\subsection{Quantum Key Generation Overhead}
+The QRNG branch depends on external network availability and therefore can introduce latency. The BB84 simulation and OS-random fallback reduce this dependency and maintain service continuity. Because key generation is layered and modular, a future production version could decouple heavy operations through asynchronous tasks or background workers if required.
+
+\subsection{Database Operation Analysis}
+Most database operations are simple inserts or filtered reads. \texttt{LoginEvent} indexing on risk level, user, and IP assists administrative analytics. The expected load characteristics are therefore acceptable for a prototype and small deployment environment. Larger deployments would benefit from pagination, archival strategies, and background aggregation of analytics.
+
+\subsection{System Behavior Under Repeated Login Attempts}
+Under repeated login attempts, the system exhibits a meaningful defensive pattern:
+
+\begin{enumerate}
+    \item failed attempts increment counters,
+    \item risk scores rise,
+    \item account lock activates at threshold,
+    \item administrative metrics begin to reflect elevated threat conditions.
+\end{enumerate}
+
+This behaviour is consistent with the project's goal of making authentication adaptive and observable.
+
+\section{User Interface Results}
+
+\subsection{Frontend Screen Analysis}
+The frontend successfully translates technical security operations into understandable user flows. The animated landing page explains the steps of the architecture, and the login overlay communicates progress through the quantum verification stages. This is especially useful for project demonstration and viva presentation because the interface exposes the conceptual uniqueness of Qauth.
+
+\subsection{Administrative Dashboard Outputs}
+The dashboard is one of the project's strongest presentation features. It aggregates login logs, risk breakdowns, key metadata, and API responses into a single operational view. For an academic security project, this is important because it demonstrates that monitoring is a first-class concern rather than a hidden backend detail.
+
+\section{Discussion}
+
+\subsection{Strengths of the Proposed Platform}
+The main strengths observed in Qauth are:
+
+\begin{enumerate}
+    \item integration of classical and quantum-inspired security mechanisms,
+    \item disciplined handling of key generation, reveal, and rotation,
+    \item explainable rule-based anomaly scoring,
+    \item persistent auditability of successful and failed logins,
+    \item strong modular separation between user logic, key engine, and monitoring logic,
+    \item a polished frontend and dashboard that make the system demonstrable.
+\end{enumerate}
+
+\subsection{Observed Limitations}
+Several limitations must also be stated clearly:
+
+\begin{enumerate}
+    \item automated unit and integration test coverage is currently minimal,
+    \item threat alert escalation appears less fully automated than event logging,
+    \item the quantum challenge nonce is generated for demonstration and could be strengthened with server-side persistence and replay tracking,
+    \item the BB84 path is a software simulation rather than hardware QKD,
+    \item the time-anomaly heuristic is global and not individualized,
+    \item no formal benchmark results are currently embedded in the codebase.
+\end{enumerate}
+
+\subsection{Comparison with Traditional Authentication Systems}
+Compared with a conventional password-and-token system, Qauth provides richer security context and stronger conceptual layering. A traditional system might validate credentials and issue a token, but Qauth also generates and protects a user-specific quantum-derived secret, records behavioural risk metadata, and supports a challenge-response proof path. Even where the project remains a prototype, its architecture is more security-aware and more informative than a typical authentication module.
+
+\section{Summary}
+The results of Qauth show that a quantum-aware authentication platform can be implemented as a practical web application with meaningful security features. The system successfully integrates quantum-derived key handling, challenge-response verification, anomaly scoring, and administrative observability. At the same time, the evaluation reveals important future work areas, especially in automated testing, stronger alert automation, and more formal performance measurement.
