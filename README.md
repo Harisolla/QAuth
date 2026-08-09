@@ -2,6 +2,8 @@
 
 Q-Auth Platform is a full-stack demo app with a React frontend and a Django REST backend for quantum-inspired authentication flows.
 
+# Live Link : https://q-auth-platform.onrender.com/
+
 ## Project Structure
 
 - `frontend/`: React + Vite client
